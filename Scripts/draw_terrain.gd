@@ -29,7 +29,7 @@ class_name DrawTerrainMesh extends CompositorEffect
 ## Rotates the gradient vectors used to calculate perlin noise
 @export_range(-180.0, 180.0) var gradient_rotation : float = 0.0
 
-## How many layers of noise to sum. More octaves give more detail with diminishing returns.
+## How many layers of noise to sum. More octaves give more detail with diminishing returns. #TODO will be used for Level Of Detail (Optimization)
 @export_range(1, 32) var octave_count : int = 10
 
 @export_subgroup("Octave Settings")
@@ -105,12 +105,16 @@ func _init():
 	var tree := Engine.get_main_loop() as SceneTree
 	var root : Node = tree.edited_scene_root if Engine.is_editor_hint() else tree.current_scene
 	if root: light = root.get_node_or_null('DirectionalLight3D')
+	#TODO a good place to get camera positon stuff i think?
 
 # Compiles... the shader...?
 func compile_shader(vertex_shader : String, fragment_shader : String) -> RID:
+	#GlslFile.open("res://Scripts/glsl_shader/source_vertex.txt","res://Scripts/glsl_shader/source_lib.txt")
+
 	var src := RDShaderSource.new()
-	src.source_vertex = vertex_shader
-	src.source_fragment = fragment_shader
+	src.source_vertex = GlslFile.open("res://Scripts/glsl_shader/source_vertex.txt","res://Scripts/glsl_shader/source_lib.txt")
+
+	src.source_fragment = GlslFile.open("res://Scripts/glsl_shader/source_fragment.txt","res://Scripts/glsl_shader/source_lib.txt")
 	
 	var shader_spirv : RDShaderSPIRV = rd.shader_compile_spirv_from_source(src)
 	
@@ -401,9 +405,11 @@ func _notification(what):
 		if p_wire_index_buffer.is_valid():
 			rd.free_rid(p_wire_index_buffer)
 
+var source_vertex  = GlslFile.open("res://Scripts/glsl_shader/source_vertex.txt","res://Scripts/glsl_shader/source_lib.txt")
+var source_fragment  = GlslFile.open("res://Scripts/glsl_shader/source_fragment.txt","res://Scripts/glsl_shader/source_lib.txt")
+var source_wire_fragment  = GlslFile.open("res://Scripts/glsl_shader/source_wire_fragment.txt","res://Scripts/glsl_shader/source_lib.txt")
 
-
-const source_vertex = "
+const _source_vertex = "
 		#version 450
 
 		// This is the uniform buffer that contains all of the settings we sent over from the cpu in _render_callback. Must match with the one in the fragment shader.
@@ -594,7 +600,7 @@ const source_vertex = "
 		"
 
 
-const source_fragment = "
+const _source_fragment = "
 		#version 450
 
 		// This is the uniform buffer that contains all of the settings we sent over from the cpu in _render_callback. Must match with the one in the vertex shader, they're technically the same thing occupying the same spot in memory this is just duplicate code required for compilation.
@@ -797,7 +803,7 @@ const source_fragment = "
 		"
 
 # I am not going to explain the wireframe shader it's pretty straight forward okay thanks
-const source_wire_fragment = "
+const _source_wire_fragment = "
 		#version 450
 
 		layout(set = 0, binding = 0, std140) uniform UniformBufferObject {
