@@ -29,7 +29,7 @@ class_name DrawTerrainMesh extends CompositorEffect
 ## Rotates the gradient vectors used to calculate perlin noise
 @export_range(-180.0, 180.0) var gradient_rotation : float = 0.0
 
-## How many layers of noise to sum. More octaves give more detail with diminishing returns.
+## How many layers of noise to sum. More octaves give more detail with diminishing returns. #TODO will be used for Level Of Detail (Optimization)
 @export_range(1, 32) var octave_count : int = 10
 
 @export_subgroup("Octave Settings")
@@ -105,9 +105,11 @@ func _init():
 	var tree := Engine.get_main_loop() as SceneTree
 	var root : Node = tree.edited_scene_root if Engine.is_editor_hint() else tree.current_scene
 	if root: light = root.get_node_or_null('DirectionalLight3D')
+	#TODO a good place to get camera positon stuff i think?
 
 # Compiles... the shader...?
 func compile_shader(vertex_shader : String, fragment_shader : String) -> RID:
+
 	var src := RDShaderSource.new()
 	src.source_vertex = vertex_shader
 	src.source_fragment = fragment_shader
@@ -400,7 +402,6 @@ func _notification(what):
 			rd.free_rid(p_wire_index_array)
 		if p_wire_index_buffer.is_valid():
 			rd.free_rid(p_wire_index_buffer)
-
 
 
 const source_vertex = "
