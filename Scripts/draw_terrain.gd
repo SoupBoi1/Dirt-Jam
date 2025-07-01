@@ -77,6 +77,8 @@ class_name DrawTerrainMesh extends CompositorEffect
 
 var transform : Transform3D
 var light : DirectionalLight3D
+var camera : Camera3D
+
 
 var rd : RenderingDevice
 var p_framebuffer : RID
@@ -105,6 +107,7 @@ func _init():
 	var tree := Engine.get_main_loop() as SceneTree
 	var root : Node = tree.edited_scene_root if Engine.is_editor_hint() else tree.current_scene
 	if root: light = root.get_node_or_null('DirectionalLight3D')
+	if root: camera = root.get_node_or_null('Camera3D')
 	#TODO a good place to get camera positon stuff i think?
 
 # Compiles... the shader...?
@@ -302,8 +305,19 @@ func _render_callback(_effect_callback_type : int, render_data : RenderData):
 			push_error("No light source detected please put a DirectionalLight3D into the scene thank you")
 	else:
 		light_direction = light.transform.basis.z.normalized()
+	
+	var camera_position = Vector3(0,0,0)
+	if not camera:
+		var tree := Engine.get_main_loop() as SceneTree
+		var root : Node = tree.edited_scene_root if Engine.is_editor_hint() else tree.current_scene
+		camera = root.get_node_or_null('Camera3D')
+		if not camera:
+			push_error("No camera source detected please put a Camera3d into the scene thank you")
+	else:
+		camera_position = camera.position
 
 	# Store all shader uniforms in a gpu data buffer, this isn't exactly the optimal data layout, each 1.0 push back is wasted space
+
 	buffer.push_back(light_direction.x)
 	buffer.push_back(light_direction.y)
 	buffer.push_back(light_direction.z)
@@ -339,6 +353,10 @@ func _render_callback(_effect_callback_type : int, render_data : RenderData):
 	buffer.push_back(ambient_light.r)
 	buffer.push_back(ambient_light.g)
 	buffer.push_back(ambient_light.b)
+	buffer.push_back(1.0)
+	buffer.push_back(camera_position.x)
+	buffer.push_back(camera_position.y)
+	buffer.push_back(camera_position.z)
 	buffer.push_back(1.0)
 	
 
@@ -408,433 +426,3 @@ func _notification(what):
 var source_vertex  = GlslFile.open("res://Scripts/glsl_shader/source_vertex.txt","res://Scripts/glsl_shader/source_lib.txt")
 var source_fragment  = GlslFile.open("res://Scripts/glsl_shader/source_fragment.txt","res://Scripts/glsl_shader/source_lib.txt")
 var source_wire_fragment  = GlslFile.open("res://Scripts/glsl_shader/source_wire_fragment.txt","res://Scripts/glsl_shader/source_lib.txt")
-
-const _source_vertex = "
-		#version 450
-
-		// This is the uniform buffer that contains all of the settings we sent over from the cpu in _render_callback. Must match with the one in the fragment shader.
-		layout(set = 0, binding = 0, std140) uniform UniformBufferObject {
-			mat4 MVP;
-			vec3 _LightDirection;
-			float _GradientRotation;
-			float _NoiseRotation;
-			float _TerrainHeight;
-			vec2 _AngularVariance;
-			float _Scale;
-			float _Octaves;
-			float _AmplitudeDecay;
-			float _NormalStrength;
-			vec3 _Offset;
-			float _Seed;
-			float _InitialAmplitude;
-			float _Lacunarity;
-			vec2 _SlopeRange;
-			vec4 _LowSlopeColor;
-			vec4 _HighSlopeColor;
-			float _FrequencyVarianceLowerBound;
-			float _FrequencyVarianceUpperBound;
-			float _SlopeDamping;
-			vec4 _AmbientLight;
-		};
-		
-		// This is the vertex data layout that we defined in initialize_render after line 198
-		layout(location = 0) in vec3 a_Position;
-		layout(location = 1) in vec4 a_Color;
-
-		// This is what the vertex shader will output and send to the fragment shader.
-		layout(location = 2) out vec4 v_Color;
-		layout(location = 3) out vec3 pos;
-
-		#define PI 3.141592653589793238462
-		
-		// UE4's PseudoRandom function
-		// https://github.com/EpicGames/UnrealEngine/blob/release/Engine/Shaders/Private/Random.ush
-		float pseudo(vec2 v) {
-			v = fract(v/128.)*128. + vec2(-64.340622, -72.465622);
-			return fract(dot(v.xyx * v.xyy, vec3(20.390625, 60.703125, 2.4281209)));
-		}
-
-		// Takes our xz positions and turns them into a random number between 0 and 1 using the above pseudo random function
-		float HashPosition(vec2 pos) {
-			return pseudo(pos * vec2(_Seed, _Seed + 4));
-		}
-
-		// Generates a random gradient vector for the perlin noise lattice points, watch my perlin noise video for a more in depth explanation
-		vec2 RandVector(float seed) {
-			float theta = seed * 360 * 2 - 360;
-			theta += _GradientRotation;
-			theta = theta * PI / 180.0;
-			return normalize(vec2(cos(theta), sin(theta)));
-		}
-
-		// Normal smoothstep is cubic -- to avoid discontinuities in the gradient, we use a quintic interpolation instead as explained in my perlin noise video
-		vec2 quinticInterpolation(vec2 t) {
-			return t * t * t * (t * (t * vec2(6) - vec2(15)) + vec2(10));
-		}
-
-		// Derivative of above function
-		vec2 quinticDerivative(vec2 t) {
-			return vec2(30) * t * t * (t * (t - vec2(2)) + vec2(1));
-		}
-
-		// it's perlin noise that returns the noise in the x component and the derivatives in the yz components as explained in my perlin noise video
-		vec3 perlin_noise2D(vec2 pos) {
-			vec2 latticeMin = floor(pos);
-			vec2 latticeMax = ceil(pos);
-
-			vec2 remainder = fract(pos);
-
-			// Lattice Corners
-			vec2 c00 = latticeMin;
-			vec2 c10 = vec2(latticeMax.x, latticeMin.y);
-			vec2 c01 = vec2(latticeMin.x, latticeMax.y);
-			vec2 c11 = latticeMax;
-
-			// Gradient Vectors assigned to each corner
-			vec2 g00 = RandVector(HashPosition(c00));
-			vec2 g10 = RandVector(HashPosition(c10));
-			vec2 g01 = RandVector(HashPosition(c01));
-			vec2 g11 = RandVector(HashPosition(c11));
-
-			// Directions to position from lattice corners
-			vec2 p0 = remainder;
-			vec2 p1 = p0 - vec2(1.0);
-
-			vec2 p00 = p0;
-			vec2 p10 = vec2(p1.x, p0.y);
-			vec2 p01 = vec2(p0.x, p1.y);
-			vec2 p11 = p1;
-			
-			vec2 u = quinticInterpolation(remainder);
-			vec2 du = quinticDerivative(remainder);
-
-			float a = dot(g00, p00);
-			float b = dot(g10, p10);
-			float c = dot(g01, p01);
-			float d = dot(g11, p11);
-
-			// Expanded interpolation freaks of nature from https://iquilezles.org/articles/gradientnoise/
-			float noise = a + u.x * (b - a) + u.y * (c - a) + u.x * u.y * (a - b - c + d);
-
-			vec2 gradient = g00 + u.x * (g10 - g00) + u.y * (g01 - g00) + u.x * u.y * (g00 - g10 - g01 + g11) + du * (u.yx * (a - b - c + d) + vec2(b, c) - a);
-			return vec3(noise, gradient);
-		}
-
-		// The fractional brownian motion that sums many noise values as explained in the video accompanying this project
-		vec3 fbm(vec2 pos) {
-			float lacunarity = _Lacunarity;
-			float amplitude = _InitialAmplitude;
-
-			// height sum
-			float height = 0.0;
-
-			// derivative sum
-			vec2 grad = vec2(0.0);
-
-			// accumulated rotations
-			mat2 m = mat2(1.0, 0.0,
-						  0.0, 1.0);
-
-			// generate random angle variance if applicable
-			float angle_variance = mix(_AngularVariance.x, _AngularVariance.y, HashPosition(vec2(_Seed, 827)));
-			float theta = (_NoiseRotation + angle_variance) * PI / 180.0;
-
-			// rotation matrix
-			mat2 m2 = mat2(cos(theta), -sin(theta),
-					  	   sin(theta),  cos(theta));
-				
-			mat2 m2i = inverse(m2);
-
-			for(int i = 0; i < int(_Octaves); ++i) {
-				vec3 n = perlin_noise2D(pos);
-				
-				// add height scaled by current amplitude
-				height += amplitude * n.x;	
-				
-				// add gradient scaled by amplitude and transformed by accumulated rotations
-				grad += amplitude * m * n.yz;
-				
-				// apply amplitude decay to reduce impact of next noise layer
-				amplitude *= _AmplitudeDecay;
-				
-				// generate random angle variance if applicable
-				angle_variance = mix(_AngularVariance.x, _AngularVariance.y, HashPosition(vec2(i * 419, _Seed)));
-				theta = (_NoiseRotation + angle_variance) * PI / 180.0;
-
-				// reconstruct rotation matrix, kind of a performance stink since this is technically expensive and doesn't need to be done if no random angle variance but whatever it's 2025
-				m2 = mat2(cos(theta), -sin(theta),
-					  	  sin(theta),  cos(theta));
-				
-				m2i = inverse(m2);
-
-				// generate frequency variance if applicable
-				float freq_variance = mix(_FrequencyVarianceLowerBound, _FrequencyVarianceUpperBound, HashPosition(vec2(i * 422, _Seed)));
-
-				// apply frequency adjustment to sample position for next noise layer
-				pos = (lacunarity + freq_variance) * m2 * pos;
-				m = (lacunarity + freq_variance) * m2i * m;
-			}
-
-			return vec3(height, grad);
-		}
-		
-		void main() {
-			// Passes the vertex color over to the fragment shader, even though we don't use it but you can use it if you want I guess
-			v_Color = a_Color;
-
-			// The fragment shader also calculates the fractional brownian motion for pixel perfect normal vectors and lighting, so we pass the vertex position to the fragment shader
-			pos = a_Position;
-
-			// Initial noise sample position offset and scaled by uniform variables
-			vec3 noise_pos = (pos + vec3(_Offset.x, 0, _Offset.z)) / _Scale;
-
-			// The fractional brownian motion
-			vec3 n = fbm(noise_pos.xz);
-
-			// Adjust height of the vertex by fbm result scaled by final desired amplitude
-			pos.y += _TerrainHeight * n.x + _TerrainHeight - _Offset.y;
-			
-			// Multiply final vertex position with model/view/projection matrices to convert to clip space
-			gl_Position = MVP * vec4(pos, 1);
-		}
-		"
-
-
-const _source_fragment = "
-		#version 450
-
-		// This is the uniform buffer that contains all of the settings we sent over from the cpu in _render_callback. Must match with the one in the vertex shader, they're technically the same thing occupying the same spot in memory this is just duplicate code required for compilation.
-		layout(set = 0, binding = 0, std140) uniform UniformBufferObject {
-			mat4 MVP;
-			vec3 _LightDirection;
-			float _GradientRotation;
-			float _NoiseRotation;
-			float _TerrainHeight;
-			vec2 _AngularVariance;
-			float _Scale;
-			float _Octaves;
-			float _AmplitudeDecay;
-			float _NormalStrength;
-			vec3 _Offset;
-			float _Seed;
-			float _InitialAmplitude;
-			float _Lacunarity;
-			vec2 _SlopeRange;
-			vec4 _LowSlopeColor;
-			vec4 _HighSlopeColor;
-			float _FrequencyVarianceLowerBound;
-			float _FrequencyVarianceUpperBound;
-			float _SlopeDamping;
-			vec4 _AmbientLight;
-		};
-		
-		// These are the variables that we expect to receive from the vertex shader
-		layout(location = 2) in vec4 a_Color;
-		layout(location = 3) in vec3 pos;
-		
-		// This is what the fragment shader will output, usually just a pixel color
-		layout(location = 0) out vec4 frag_color;
-
-		#define PI 3.141592653589793238462
-		
-		// UE4's PseudoRandom function
-		// https://github.com/EpicGames/UnrealEngine/blob/release/Engine/Shaders/Private/Random.ush
-		float pseudo(vec2 v) {
-			v = fract(v/128.)*128. + vec2(-64.340622, -72.465622);
-			return fract(dot(v.xyx * v.xyy, vec3(20.390625, 60.703125, 2.4281209)));
-		}
-
-		// Takes our xz positions and turns them into a random number between 0 and 1 using the above pseudo random function
-		float HashPosition(vec2 pos) {
-			return pseudo(pos * vec2(_Seed, _Seed + 4));
-		}
-
-		// Generates a random gradient vector for the perlin noise lattice points, watch my perlin noise video for a more in depth explanation
-		vec2 RandVector(float seed) {
-			float theta = seed * 360 * 2 - 360;
-			theta += _GradientRotation;
-			theta = theta * PI / 180.0;
-			return normalize(vec2(cos(theta), sin(theta)));
-		}
-
-		// Normal smoothstep is cubic -- to avoid discontinuities in the gradient, we use a quintic interpolation instead as explained in my perlin noise video
-		vec2 quinticInterpolation(vec2 t) {
-			return t * t * t * (t * (t * vec2(6) - vec2(15)) + vec2(10));
-		}
-
-		// Derivative of above function
-		vec2 quinticDerivative(vec2 t) {
-			return vec2(30) * t * t * (t * (t - vec2(2)) + vec2(1));
-		}
-
-		// it's perlin noise that returns the noise in the x component and the derivatives in the yz components as explained in my perlin noise video
-		vec3 perlin_noise2D(vec2 pos) {
-			vec2 latticeMin = floor(pos);
-			vec2 latticeMax = ceil(pos);
-
-			vec2 remainder = fract(pos);
-
-			// Lattice Corners
-			vec2 c00 = latticeMin;
-			vec2 c10 = vec2(latticeMax.x, latticeMin.y);
-			vec2 c01 = vec2(latticeMin.x, latticeMax.y);
-			vec2 c11 = latticeMax;
-
-			// Gradient Vectors assigned to each corner
-			vec2 g00 = RandVector(HashPosition(c00));
-			vec2 g10 = RandVector(HashPosition(c10));
-			vec2 g01 = RandVector(HashPosition(c01));
-			vec2 g11 = RandVector(HashPosition(c11));
-
-			// Directions to position from lattice corners
-			vec2 p0 = remainder;
-			vec2 p1 = p0 - vec2(1.0);
-
-			vec2 p00 = p0;
-			vec2 p10 = vec2(p1.x, p0.y);
-			vec2 p01 = vec2(p0.x, p1.y);
-			vec2 p11 = p1;
-			
-			vec2 u = quinticInterpolation(remainder);
-			vec2 du = quinticDerivative(remainder);
-
-			float a = dot(g00, p00);
-			float b = dot(g10, p10);
-			float c = dot(g01, p01);
-			float d = dot(g11, p11);
-
-			// Expanded interpolation freaks of nature from https://iquilezles.org/articles/gradientnoise/
-			float noise = a + u.x * (b - a) + u.y * (c - a) + u.x * u.y * (a - b - c + d);
-
-			vec2 gradient = g00 + u.x * (g10 - g00) + u.y * (g01 - g00) + u.x * u.y * (g00 - g10 - g01 + g11) + du * (u.yx * (a - b - c + d) + vec2(b, c) - a);
-			return vec3(noise, gradient);
-		}
-
-		// The fractional brownian motion that sums many noise values as explained in the video accompanying this project
-		vec3 fbm(vec2 pos) {
-			float lacunarity = _Lacunarity;
-			float amplitude = _InitialAmplitude;
-
-			// height sum
-			float height = 0.0;
-
-			// derivative sum
-			vec2 grad = vec2(0.0);
-
-			// accumulated rotations
-			mat2 m = mat2(1.0, 0.0,
-						  0.0, 1.0);
-
-			// generate random angle variance if applicable
-			float angle_variance = mix(_AngularVariance.x, _AngularVariance.y, HashPosition(vec2(_Seed, 827)));
-			float theta = (_NoiseRotation + angle_variance) * PI / 180.0;
-
-			// rotation matrix
-			mat2 m2 = mat2(cos(theta), -sin(theta),
-					  	   sin(theta),  cos(theta));
-				
-			mat2 m2i = inverse(m2);
-
-			for(int i = 0; i < int(_Octaves); ++i) {
-				vec3 n = perlin_noise2D(pos);
-				
-				// add height scaled by current amplitude
-				height += amplitude * n.x;	
-				
-				// add gradient scaled by amplitude and transformed by accumulated rotations
-				grad += amplitude * m * n.yz;
-				
-				// apply amplitude decay to reduce impact of next noise layer
-				amplitude *= _AmplitudeDecay;
-				
-				// generate random angle variance if applicable
-				angle_variance = mix(_AngularVariance.x, _AngularVariance.y, HashPosition(vec2(i * 419, _Seed)));
-				theta = (_NoiseRotation + angle_variance) * PI / 180.0;
-
-				// reconstruct rotation matrix, kind of a performance stink since this is technically expensive and doesn't need to be done if no random angle variance but whatever it's 2025
-				m2 = mat2(cos(theta), -sin(theta),
-					  	  sin(theta),  cos(theta));
-				
-				m2i = inverse(m2);
-
-				// generate frequency variance if applicable
-				float freq_variance = mix(_FrequencyVarianceLowerBound, _FrequencyVarianceUpperBound, HashPosition(vec2(i * 422, _Seed)));
-
-				// apply frequency adjustment to sample position for next noise layer
-				pos = (lacunarity + freq_variance) * m2 * pos;
-				m = (lacunarity + freq_variance) * m2i * m;
-			}
-
-			return vec3(height, grad);
-		}
-		
-		void main() {
-			// Recalculate initial noise sampling position same as vertex shader
-			vec3 noise_pos = (pos + vec3(_Offset.x, 0, _Offset.z)) / _Scale;
-
-			// Calculate fbm, we don't care about the height just the derivatives here for the normal vector so the ` + _TerrainHeight - _Offset.y` drops off as it isn't relevant to the derivative
-			vec3 n = _TerrainHeight * fbm(noise_pos.xz);
-
-			// To more easily customize the color slope blending this is a separate normal vector with its horizontal gradients significantly reduced so the normal points upwards more
-			vec3 slope_normal = normalize(vec3(-n.y, 1, -n.z) * vec3(_SlopeDamping, 1, _SlopeDamping));
-
-			// Use the slope of the above normal to create the blend value between the two terrain colors
-			float material_blend_factor = smoothstep(_SlopeRange.x, _SlopeRange.y, 1 - slope_normal.y);
-
-			// Blend between the two terrain colors
-			vec4 albedo = mix(_LowSlopeColor, _HighSlopeColor, vec4(material_blend_factor));
-
-			// This is the actual surface normal vector
-			vec3 normal = normalize(vec3(-n.y, 1, -n.z));
-
-			// Lambertian diffuse, negative dot product values clamped off because negative light doesn't exist
-			float ndotl = clamp(dot(_LightDirection, normal), 0, 1);
-
-			// Direct light cares about the diffuse result, ambient light does not
-			vec4 direct_light = albedo * ndotl;
-			vec4 ambient_light = albedo * _AmbientLight;
-
-			// Combine lighting values, clip to prevent pixel values greater than 1 which would really really mess up the gamma correction below
-			vec4 lit = clamp(direct_light + ambient_light, vec4(0), vec4(1));
-
-			// Convert from linear rgb to srgb for proper color output, ideally you'd do this as some final post processing effect because otherwise you will need to revert this gamma correction elsewhere
-			frag_color = pow(lit, vec4(2.2));
-		}
-		"
-
-# I am not going to explain the wireframe shader it's pretty straight forward okay thanks
-const _source_wire_fragment = "
-		#version 450
-
-		layout(set = 0, binding = 0, std140) uniform UniformBufferObject {
-			mat4 MVP; // 64 -> 0
-			vec3 _LightDirection; // 16 -> 64
-			float _GradientRotation;
-			float _NoiseRotation; // 4 -> 80
-			float _Amplitude; // 4 -> 84
-			vec2 _AngularVariance; // 8 -> 88
-			float _Frequency; // 4 -> 96
-			float _Octaves; // 4 -> 100
-			float _AmplitudeDecay; // 4 -> 104
-			float _NormalStrength; // 4  -> 108
-			vec3 _Offset; // 16 -> 112 -> 128
-			float _Seed;
-			float _InitialAmplitude;
-			float _Lacunarity;
-			vec2 _SlopeRange;
-			vec4 _LowSlopeColor;
-			vec4 _HighSlopeColor;
-			float _FrequencyVarianceLowerBound;
-			float _FrequencyVarianceUpperBound;
-			float _SlopeDamping;
-			vec4 _AmbientLight;
-		};
-		
-		layout(location = 2) in vec4 a_Color;
-		
-		layout(location = 0) out vec4 frag_color;
-		
-		void main(){
-			frag_color = vec4(1, 0, 0, 1);
-		}
-		"

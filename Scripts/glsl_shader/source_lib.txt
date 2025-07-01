@@ -22,6 +22,8 @@ layout(set = 0, binding = 0, std140) uniform UniformBufferObject {
 	float _FrequencyVarianceUpperBound;
 	float _SlopeDamping;
 	vec4 _AmbientLight;
+	vec3 _Campos;
+
 };
 
 #define PI 3.141592653589793238462
