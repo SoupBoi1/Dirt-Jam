@@ -307,6 +307,8 @@ func _render_callback(_effect_callback_type : int, render_data : RenderData):
 		light_direction = light.transform.basis.z.normalized()
 	
 	var camera_position = Vector3(0,0,0)
+	var camera_dir = Vector3(0,1,0)
+
 	if not camera:
 		var tree := Engine.get_main_loop() as SceneTree
 		var root : Node = tree.edited_scene_root if Engine.is_editor_hint() else tree.current_scene
@@ -315,6 +317,7 @@ func _render_callback(_effect_callback_type : int, render_data : RenderData):
 			push_error("No camera source detected please put a Camera3d into the scene thank you")
 	else:
 		camera_position = camera.position
+		camera_dir = camera.transform.basis.z.normalized()
 
 	# Store all shader uniforms in a gpu data buffer, this isn't exactly the optimal data layout, each 1.0 push back is wasted space
 
@@ -358,6 +361,11 @@ func _render_callback(_effect_callback_type : int, render_data : RenderData):
 	buffer.push_back(camera_position.y)
 	buffer.push_back(camera_position.z)
 	buffer.push_back(1.0)
+	buffer.push_back(camera_dir.x)
+	buffer.push_back(camera_dir.y)
+	buffer.push_back(camera_dir.z)
+	buffer.push_back(1.0)
+	
 	
 
 	# All of our settings are stored in a single uniform buffer, certainly not the best decision, but it's easy to work with

@@ -23,6 +23,7 @@ layout(set = 0, binding = 0, std140) uniform UniformBufferObject {
 	float _SlopeDamping;
 	vec4 _AmbientLight;
 	vec3 _Campos;
+	vec3 _CamDir;
 
 };
 
