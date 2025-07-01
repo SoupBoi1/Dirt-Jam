@@ -5,6 +5,7 @@
 // These are the variables that we expect to receive from the vertex shader
 layout(location = 2) in vec4 a_Color;
 layout(location = 3) in vec3 pos;
+layout(location = 4) in float camdis;
 
 // This is what the fragment shader will output, usually just a pixel color
 layout(location = 0) out vec4 frag_color;
@@ -38,8 +39,13 @@ void main() {
 
 	// Combine lighting values, clip to prevent pixel values greater than 1 which would really really mess up the gamma correction below
 	vec4 lit = clamp(direct_light + ambient_light, vec4(0), vec4(1));
-	float dist = sqrt(dot(_Campos,pos))/2550.0;
-	// Convert from linear rgb to srgb for proper color output, ideally you'd do this as some final post processing effect because otherwise you will need to revert this gamma correction elsewhere
-	frag_color = pow(vec4(dist,dist,dist,0.0), vec4(2.2));
+	float dist = (camdis/(pow(2.0,7)));
 
+	vec4 dismask = vec4(dist,dist,dist,1.0);
+	vec4 fog_color = vec4(132/255.0,141/255.0,155/255.0,255/255.0);
+//vec4(132/255.0,141/255.0,155/255.0,255/255.0)
+	
+	// Convert from linear rgb to srgb for proper color output, ideally you'd do this as some final post processing effect because otherwise you will need to revert this gamma correction elsewhere
+	frag_color = pow( min( fog_color ,(fog_color*dismask)+ (lit*max(vec4(0.0),((1-dismask))) ) ) , vec4(2.2));
+//
 }

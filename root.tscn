@@ -11,6 +11,7 @@ glow_normalized = true
 glow_intensity = 1.75
 glow_strength = 1.65
 glow_bloom = 0.33
+fog_enabled = true
 fog_mode = 1
 fog_density = 1.0
 fog_depth_begin = 0.0
@@ -59,7 +60,7 @@ compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_vvh5
 transform = Transform3D(0.587785, 0.0338782, 0.808307, 8.73461e-08, -0.999123, 0.0418757, 0.809017, -0.0246138, -0.587269, 0, 43.6438, -5.35162)
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 43.6438, 20.9735)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 18.6371, 20.9735)
 script = ExtResource("1_hekff")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
