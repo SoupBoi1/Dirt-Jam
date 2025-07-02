@@ -105,7 +105,7 @@ vec3 perlin_noise2D(vec2 pos) {
 }
 
 // The fractional brownian motion that sums many noise values as explained in the video accompanying this project
-vec3 fbm(vec2 pos) {
+vec3 fbm(vec2 pos,float camdis) {
 	float lacunarity = _Lacunarity;
 	float amplitude = _InitialAmplitude;
 
@@ -129,7 +129,12 @@ vec3 fbm(vec2 pos) {
 		
 	mat2 m2i = inverse(m2);
 
-	for(int i = 0; i < int(_Octaves); ++i) {
+	float dist = max(0,1.0-(camdis/(pow(2.0,_Octaves))));
+	//float fixer = clamp(0.0112005*pow(2.71828,4.49452*dist),0.0,1.0);
+	float fixer = clamp(0.000460571*pow(2.7182818284,7.68304*dist),0,1.0);
+	float dy_octaves = 7.0 + fixer*10.0; // optimize via distance
+
+	for(int i = 0; i < int(dy_octaves); ++i) {
 		vec3 n = perlin_noise2D(pos);
 		
 		// add height scaled by current amplitude

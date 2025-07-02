@@ -29,18 +29,18 @@ needs_motion_vectors = false
 needs_normal_roughness = false
 script = ExtResource("2_pyidc")
 regenerate = false
-side_length = 400
-mesh_scale = 0.5
+side_length = 1000
+mesh_scale = 1.0
 wireframe = false
 noise_seed = 135
 zoom = 139.5
 offset = Vector3(-200, 95.655, -326.08)
 gradient_rotation = 0.0
-octave_count = 10
+octave_count = 8
 rotation = -26.99
 angular_variance = Vector2(-15, 15)
 initial_amplitude = 0.739
-amplitude_decay = 0.439
+amplitude_decay = 0.49
 lacunarity = 1.991
 frequency_variance = Vector2(-0.085, 0.115)
 height_scale = 90.9
@@ -57,10 +57,10 @@ compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_vvh5
 [node name="Root" type="Node3D"]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(0.584725, 0.13552, 0.799832, 0.655755, -0.659397, -0.367671, 0.47758, 0.73948, -0.474434, 24.0193, 43.6438, -5.35162)
+transform = Transform3D(-0.0799881, 0.416934, 0.905411, 0.947265, -0.25097, 0.199256, 0.310308, 0.873601, -0.374872, 24.0193, 30.6544, -5.35162)
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 18.6371, 20.9735)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 18.0883, 20.9735)
 script = ExtResource("1_hekff")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]

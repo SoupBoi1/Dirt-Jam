@@ -24,7 +24,7 @@ void main() {
 	vec3 noise_pos = (pos + vec3(_Offset.x, 0, _Offset.z)) / _Scale;
 
 	// The fractional brownian motion
-	vec3 n = fbm(noise_pos.xz);
+	vec3 n = fbm(noise_pos.xz,camdis);
 
 	// Adjust height of the vertex by fbm result scaled by final desired amplitude
 	pos.y += _TerrainHeight * n.x + _TerrainHeight - _Offset.y;
