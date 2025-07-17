@@ -50,23 +50,31 @@ float sh(vec3 pos, vec3 dir, float dt) {
     float maxt = 10.0;
 
 	vec3 p = vec3(1);
-	vec3 noise_pos = (p + vec3(_Offset.x, 0, _Offset.z)) / _Scale;
-    vec3 n =fbm(noise_pos.xz, camdis);
+	vec3 noise_pos = vec3(1);
+    vec3 n =vec3(1);
+	float train_height = 1.0;
 
+	float d = 1.0;//distance from train_height to p
+	float res=1.0;
 
     for (float t = mint; t < maxt; t += dt) {
         p = pos + dir * t;
 
         noise_pos = (p + vec3(_Offset.x, 0, _Offset.z)) / _Scale;
 		n =fbm(noise_pos.xz, camdis);
-        height = _TerrainHeight * fbm(noise_pos.xz, camdis).x + _TerrainHeight - _Offset.y;
+        train_height = _TerrainHeight * fbm(noise_pos.xz, camdis).x + _TerrainHeight - _Offset.y;
+		d = max(0,p.y-train_height);
 
-        if (p.y < height) {
-            return 0; 
-        }
+		res = min( res, 32.0*d/t );
+        if( res<0.0001) break;
+
+      //  if (p.y < train_height) {
+     //       return 0; 
+     //   }
     }
 
-    return 1;
+ //   return 1;
+ 	return clamp( res, 0.0, 1.0 );
 
 }
 
