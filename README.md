@@ -1,6 +1,5 @@
 # Godot Terrain Generator
-
-by Acerola
+from Acerolo
 
 Implements simple perlin noise based fractional brownian motion as a Godot compositor effect for use as a base or reference in my event [Dirt Jam](https://itch.io/jam/acerola-dirt-jam/).
 
