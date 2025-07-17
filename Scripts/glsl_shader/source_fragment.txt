@@ -47,6 +47,7 @@ vec4 specular_highlight(vec4 specularmap,vec3 normal, vec3 LightDirection,vec3 C
 }
 float sh(vec3 pos, vec3 dir, float dt) {
     float mint = 0.01;
+	float t = mint;
     float maxt = 10.0;
 
 	vec3 p = vec3(1);
@@ -56,8 +57,8 @@ float sh(vec3 pos, vec3 dir, float dt) {
 
 	float d = 1.0;//distance from train_height to p
 	float res=1.0;
-
-    for (float t = mint; t < maxt; t += dt) {
+	for( int i=0; i<32; i++ ){
+    //for (float t = mint; t < maxt; t += dt) {
         p = pos + dir * t;
 
         noise_pos = (p + vec3(_Offset.x, 0, _Offset.z)) / _Scale;
@@ -67,7 +68,8 @@ float sh(vec3 pos, vec3 dir, float dt) {
 
 		res = min( res, 32.0*d/t );
         if( res<0.0001) break;
-
+        t += clamp( d, 2.0+t*0.1, 100.0 );
+		//t=dt;
       //  if (p.y < train_height) {
      //       return 0; 
      //   }
@@ -100,7 +102,7 @@ void main() {
 
 	// Lambertian diffuse, negative dot product values clamped off because negative light doesn't exist
 	float ndotl = clamp(dot(_LightDirection, normal), 0, 1);
-	float long_shadow = sh(pos,_LightDirection,0.1);
+	//float long_shadow = sh(pos,_LightDirection,0.1);
 	// Direct light cares about the diffuse result, ambient light does not
 	vec4 direct_light = albedo * ndotl;
 	vec4 ambient_light = albedo * _AmbientLight;
@@ -116,8 +118,8 @@ void main() {
 	
 	//vec4 fog_color = vec4(132/255.0,141/255.0,155/255.0,255/255.0);
 //	vec4 fog_color = vec4(_fog_color.x,_fog_color.y,_fog_color.z,1.0);
-	//vec4 final  =  fog_added(lit,camdis,fog_color,_fog_start,_fog_end);
+	vec4 final  =  fog_added(lit,camdis,_fog_color,_fog_start,_fog_end);
 	//vec4 final = vec4(sh(noise_pos,_LightDirection,0.1));
-	frag_color = pow(vec4(long_shadow), vec4(2.2));
+	frag_color = pow(final, vec4(2.2));
 //vec4(fresnel)
 }
