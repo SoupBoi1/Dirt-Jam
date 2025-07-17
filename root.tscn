@@ -29,7 +29,7 @@ needs_motion_vectors = false
 needs_normal_roughness = false
 script = ExtResource("2_pyidc")
 regenerate = false
-side_length = 1000
+side_length = 500
 mesh_scale = 1.0
 wireframe = false
 noise_seed = 139
@@ -51,7 +51,7 @@ high_slope_color = Color(0.1, 0.05835, 0.049, 1)
 ambient_light = Color(0.192, 0.2712, 0.3, 1)
 fog_color = Color(0.517647, 0.552941, 0.607843, 1)
 fog_start = 0.0
-fog_end = 100.0
+fog_end = 1000.0
 metadata/_custom_type_script = "uid://7n58awc2ols0"
 
 [sub_resource type="Compositor" id="Compositor_1i1cu"]
@@ -60,7 +60,7 @@ compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_vvh5
 [node name="Root" type="Node3D"]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.0193, 30.6544, -5.35162)
+transform = Transform3D(0.0306558, 0.99262, 0.117326, 0.135407, -0.120424, 0.983445, 0.990316, -0.0142615, -0.138099, 21.3462, 32.5909, -7.53787)
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -19.4693, 20.9735)
