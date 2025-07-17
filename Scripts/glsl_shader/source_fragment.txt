@@ -45,28 +45,31 @@ vec4 specular_highlight(vec4 specularmap,vec3 normal, vec3 LightDirection,vec3 C
 	float result = pow(max(0,dot(CamDir,R)),intensity);
 	return clamp(vec4(0),vec4(1),vec4(result,result,result,1.0)*specularmap);
 }
-float sh(vec3 pos,vec3 dir,float dt){
+float sh(vec3 pos, vec3 dir, float dt) {
+    float mint = 0.01;
+    float maxt = 10.0;
 
-	float mint = 0.01;
-	float maxt = 10;
+	vec3 p = vec3(1);
+	vec3 noise_pos = (p + vec3(_Offset.x, 0, _Offset.z)) / _Scale;
+    vec3 n =fbm(noise_pos.xz, camdis);
 
-	vec3 n = fbm(pos.xz,camdis);
 
-	vec3 p = vec3(0);
+    for (float t = mint; t < maxt; t += dt) {
+        p = pos + dir * t;
 
-	// Adjust height of the vertex by fbm result scaled by final desired amplitude
+        noise_pos = (p + vec3(_Offset.x, 0, _Offset.z)) / _Scale;
+		n =fbm(noise_pos.xz, camdis);
+        height = _TerrainHeight * fbm(noise_pos.xz, camdis).x + _TerrainHeight - _Offset.y;
 
-	for(float t=mint; t<maxt;t+=dt){
-		p = pos+dir*t;
-		n = fbm(p.xz,camdis);
-		if(p.y< ( _TerrainHeight * n.x + _TerrainHeight - _Offset.y))
-		{
-			return 1.0;
-		}
-	}
+        if (p.y < height) {
+            return 0; 
+        }
+    }
 
-	return 0.0;
+    return 1;
+
 }
+
 void main() {
 	// Recalculate initial noise sampling position same as vertex shader
 	vec3 noise_pos = (pos + vec3(_Offset.x, 0, _Offset.z)) / _Scale;
@@ -89,9 +92,9 @@ void main() {
 
 	// Lambertian diffuse, negative dot product values clamped off because negative light doesn't exist
 	float ndotl = clamp(dot(_LightDirection, normal), 0, 1);
-	float long_shadow = sh(noise_pos,_LightDirection,0.1);
+	float long_shadow = sh(pos,_LightDirection,0.1);
 	// Direct light cares about the diffuse result, ambient light does not
-	vec4 direct_light = albedo * ndotl*long_shadow;
+	vec4 direct_light = albedo * ndotl;
 	vec4 ambient_light = albedo * _AmbientLight;
 
 	vec4 specular_v4 =vec4(0.1)*specular_highlight(albedo_mask,normal,_LightDirection,_CamDir,32.0);
@@ -104,8 +107,8 @@ void main() {
 
 	
 	//vec4 fog_color = vec4(132/255.0,141/255.0,155/255.0,255/255.0);
-	vec4 fog_color = vec4(_fog_color.x,_fog_color.y,_fog_color.z,1.0);
-	vec4 final  =  fog_added(lit,camdis,fog_color,_fog_start,_fog_end);
+//	vec4 fog_color = vec4(_fog_color.x,_fog_color.y,_fog_color.z,1.0);
+	//vec4 final  =  fog_added(lit,camdis,fog_color,_fog_start,_fog_end);
 	//vec4 final = vec4(sh(noise_pos,_LightDirection,0.1));
 	frag_color = pow(vec4(long_shadow), vec4(2.2));
 //vec4(fresnel)
