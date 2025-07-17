@@ -11,7 +11,6 @@ glow_normalized = true
 glow_intensity = 1.75
 glow_strength = 1.65
 glow_bloom = 0.33
-fog_enabled = true
 fog_mode = 1
 fog_density = 1.0
 fog_depth_begin = 0.0
@@ -60,7 +59,7 @@ compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_vvh5
 [node name="Root" type="Node3D"]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(-0.210225, -0.576491, 0.789597, 0.473452, 0.64659, 0.598134, -0.855365, 0.499579, 0.137011, 21.3462, 32.5909, -7.53787)
+transform = Transform3D(1, 0, 0, 0, 0.964095, 0.265556, 0, -0.265556, 0.964095, 21.3462, 32.5909, -7.53787)
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -19.4693, 20.9735)

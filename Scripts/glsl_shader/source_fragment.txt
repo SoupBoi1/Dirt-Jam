@@ -1,7 +1,8 @@
 
 #version 450
 #include source_lib
-
+#define LONG_SH 0
+#define FOG_ENABLE 0
 // These are the variables that we expect to receive from the vertex shader
 layout(location = 2) in vec4 a_Color;
 layout(location = 3) in vec3 pos;
@@ -46,7 +47,7 @@ vec4 specular_highlight(vec4 specularmap,vec3 normal, vec3 LightDirection,vec3 C
 	return clamp(vec4(0),vec4(1),vec4(result,result,result,1.0)*specularmap);
 }
 float sh(vec3 pos, vec3 dir, float dt) {
-    float mint = 0.01;
+    float mint = 0.1;
 	float t = mint;
     float maxt = 10.0;
 
@@ -66,7 +67,7 @@ float sh(vec3 pos, vec3 dir, float dt) {
         train_height = _TerrainHeight * fbm(noise_pos.xz, camdis).x + _TerrainHeight - _Offset.y;
 		d = max(0,p.y-train_height);
 
-		res = min( res, 32.0*d/t );
+		res = min( res, 32*d/t );
         if( res<0.0001) break;
         t += clamp( d, 2.0+t*0.1, 100.0 );
 		//t=dt;
@@ -102,9 +103,13 @@ void main() {
 
 	// Lambertian diffuse, negative dot product values clamped off because negative light doesn't exist
 	float ndotl = clamp(dot(_LightDirection, normal), 0, 1);
-	//float long_shadow = sh(pos,_LightDirection,0.1);
 	// Direct light cares about the diffuse result, ambient light does not
-	vec4 direct_light = albedo * ndotl;
+#if LONG_SH == 1
+	float long_shadow = sh(pos,_LightDirection,0.1);
+#else
+	float long_shadow = 1.0;
+#endif
+	vec4 direct_light = albedo * ndotl*long_shadow;
 	vec4 ambient_light = albedo * _AmbientLight;
 
 	vec4 specular_v4 =vec4(0.1)*specular_highlight(albedo_mask,normal,_LightDirection,_CamDir,32.0);
@@ -118,8 +123,14 @@ void main() {
 	
 	//vec4 fog_color = vec4(132/255.0,141/255.0,155/255.0,255/255.0);
 //	vec4 fog_color = vec4(_fog_color.x,_fog_color.y,_fog_color.z,1.0);
+	#if FOG_ENABLE ==1
 	vec4 final  =  fog_added(lit,camdis,_fog_color,_fog_start,_fog_end);
+	#else 
+	vec4 final = lit;
+	#endif
+
+	final = vec4(perlin_noise2D(vec2(pos.x/10,pos.z/10)).x);
 	//vec4 final = vec4(sh(noise_pos,_LightDirection,0.1));
-	frag_color = pow(final, vec4(2.2));
+	frag_color = pow(vec4(final), vec4(2.2));
 //vec4(fresnel)
 }

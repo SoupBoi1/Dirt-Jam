@@ -32,7 +32,7 @@ layout(set = 0, binding = 0, std140) uniform UniformBufferObject {
 };
 
 #define PI 3.141592653589793238462
-
+#define OPTIMIZED_FBM 1
 
 // UE4's PseudoRandom function
 // https://github.com/EpicGames/UnrealEngine/blob/release/Engine/Shaders/Private/Random.ush
@@ -140,8 +140,15 @@ vec3 fbm(vec2 pos,float camdis) {
 
 	float dist_high_setting = -2.91965*log(camdis) +22.22815;
 	float dist_low_setting = -2.12591*log(camdis) +16.23171;
-	float com = min(_Octaves,dist_low_setting * ceil(min(1,max(0,_fog_end-camdis))) );
-	for(int i = 0; i < int(_Octaves); ++i) {
+	float dyamic_Octaves = min(_Octaves,dist_low_setting * ceil(min(1,max(0,_fog_end-camdis))) );
+#if OPTIMIZED_FBM == 1	
+	float final_Octaves = dyamic_Octaves;
+#else
+	float final_Octaves = _Octaves;
+#endif
+
+
+	for(int i = 0; i < int(final_Octaves); ++i) {
 		vec3 n = perlin_noise2D(pos);
 		
 		// add height scaled by current amplitude
