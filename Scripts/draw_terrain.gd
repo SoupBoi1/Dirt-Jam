@@ -74,6 +74,15 @@ class_name DrawTerrainMesh extends CompositorEffect
 ## Additive light adjustment
 @export var ambient_light : Color = Color.DIM_GRAY
 
+@export_group("Fog Settings")
+
+## color adjustment
+@export var fog_color : Color = Color.DIM_GRAY
+## start distance 
+@export var fog_start : float = 0.0
+## end distance 
+@export var fog_end : float = 1000.0
+
 
 var transform : Transform3D
 var light : DirectionalLight3D
@@ -365,8 +374,17 @@ func _render_callback(_effect_callback_type : int, render_data : RenderData):
 	buffer.push_back(camera_dir.y)
 	buffer.push_back(camera_dir.z)
 	buffer.push_back(1.0)
-	
-	
+	buffer.push_back(fog_color.r)
+	buffer.push_back(fog_color.g)
+	buffer.push_back(fog_color.b)
+	buffer.push_back(1.0)
+	buffer.push_back(fog_start)
+	buffer.push_back(fog_end)
+	buffer.push_back(1.0)
+	buffer.push_back(1.0)
+
+
+
 
 	# All of our settings are stored in a single uniform buffer, certainly not the best decision, but it's easy to work with
 	var buffer_bytes : PackedByteArray = PackedFloat32Array(buffer).to_byte_array()

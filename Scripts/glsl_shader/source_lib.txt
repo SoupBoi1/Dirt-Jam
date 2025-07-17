@@ -24,6 +24,10 @@ layout(set = 0, binding = 0, std140) uniform UniformBufferObject {
 	vec4 _AmbientLight;
 	vec3 _Campos;
 	vec3 _CamDir;
+	vec4 _fog_color;
+	float _fog_start;
+	float _fog_end;
+
 
 };
 
@@ -129,12 +133,15 @@ vec3 fbm(vec2 pos,float camdis) {
 		
 	mat2 m2i = inverse(m2);
 
-	float dist = max(0,1.0-(camdis/(pow(2.0,_Octaves))));
+	//float dist = max(0,1.0-(camdis/(pow(2.0,_Octaves))));
 	//float fixer = clamp(0.0112005*pow(2.71828,4.49452*dist),0.0,1.0);
-	float fixer = clamp(0.000460571*pow(2.7182818284,7.68304*dist),0,1.0);
-	float dy_octaves = 7.0 + fixer*10.0; // optimize via distance
+	//float fixer = max(clamp(0.000460571*pow(2.7182818284,7.68304*dist),0,1.0),0.3*dist);
+	//float dy_octaves =  fixer*16.0; // optimize via distance
 
-	for(int i = 0; i < int(dy_octaves); ++i) {
+	float dist_high_setting = -2.91965*log(camdis) +22.22815;
+	float dist_low_setting = -2.12591*log(camdis) +16.23171;
+
+	for(int i = 0; i < int(min(_Octaves,dist_high_setting * floor(min(1,max(0,_fog_end-camdis))) )); ++i) {
 		vec3 n = perlin_noise2D(pos);
 		
 		// add height scaled by current amplitude

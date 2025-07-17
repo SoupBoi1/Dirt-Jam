@@ -32,11 +32,11 @@ regenerate = false
 side_length = 1000
 mesh_scale = 1.0
 wireframe = false
-noise_seed = 135
+noise_seed = 139
 zoom = 139.5
 offset = Vector3(-200, 95.655, -326.08)
 gradient_rotation = 0.0
-octave_count = 8
+octave_count = 14
 rotation = -26.99
 angular_variance = Vector2(-15, 15)
 initial_amplitude = 0.739
@@ -49,6 +49,9 @@ slope_threshold = Vector2(0.9, 0.98)
 low_slope_color = Color(0.366477, 0.373384, 0.0777902, 1)
 high_slope_color = Color(0.1, 0.05835, 0.049, 1)
 ambient_light = Color(0.192, 0.2712, 0.3, 1)
+fog_color = Color(0.517647, 0.552941, 0.607843, 1)
+fog_start = 0.0
+fog_end = 100.0
 metadata/_custom_type_script = "uid://7n58awc2ols0"
 
 [sub_resource type="Compositor" id="Compositor_1i1cu"]
@@ -57,10 +60,10 @@ compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_vvh5
 [node name="Root" type="Node3D"]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(-0.0799881, 0.416934, 0.905411, 0.947265, -0.25097, 0.199256, 0.310308, 0.873601, -0.374872, 24.0193, 30.6544, -5.35162)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.0193, 30.6544, -5.35162)
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 18.0883, 20.9735)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -19.4693, 20.9735)
 script = ExtResource("1_hekff")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]

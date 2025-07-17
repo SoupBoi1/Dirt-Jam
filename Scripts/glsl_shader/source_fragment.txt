@@ -10,8 +10,19 @@ layout(location = 4) in float camdis;
 // This is what the fragment shader will output, usually just a pixel color
 layout(location = 0) out vec4 frag_color;
 
-vec4 fog_added(vec4 lit, float camdis, vec4 fog_color,float sensitive){
+vec4 fog_added_power_based(vec4 lit, float camdis, vec4 fog_color,float sensitive){
 	float dist = (camdis/(pow(2.0,sensitive))); //bests sensitive = 7
+	vec4 dismask = vec4(dist,dist,dist,1.0);
+	return min( fog_color ,(fog_color*dismask)+ (lit*max(vec4(0.0),((1-dismask))) ) );
+
+}
+
+//TODO make fog toggleable
+	//if less _fog_start O=0
+	//else if more then _fog_start O>0 in liear 
+	//esle _fog_end ==1
+vec4 fog_added(vec4 lit, float camdis, vec4 fog_color,float fog_start,float fog_end){
+	float dist = min(fog_end, max(0,camdis-fog_start) )/(fog_end-_fog_start);//  ;
 	vec4 dismask = vec4(dist,dist,dist,1.0);
 	return min( fog_color ,(fog_color*dismask)+ (lit*max(vec4(0.0),((1-dismask))) ) );
 
@@ -71,14 +82,10 @@ void main() {
 
 
 	
-	vec4 fog_color = vec4(132/255.0,141/255.0,155/255.0,255/255.0);
+	//vec4 fog_color = vec4(132/255.0,141/255.0,155/255.0,255/255.0);
+	vec4 fog_color = vec4(_fog_color.x,_fog_color.y,_fog_color.z,1.0);
+	vec4 final  =  fog_added(lit,camdis,fog_color,_fog_start,_fog_end);
 
-	vec4 final  =  fog_added(lit,camdis,fog_color,7);
-	//float dist = max(0,1.0-(camdis/(pow(2.0,_Octaves))));
-	
-	//float fixer = clamp(0.0112005*pow(2.71828,4.49452*dist),0.0,1.0);
-	//float fixer = max(clamp(0.000460571*pow(2.7182818284,7.68304*dist),0,1.0),clamp(0.2688875*dist,0.0,1));
-	// Convert from linear rgb to srgb for proper color output, ideally you'd do this as some final post processing effect because otherwise you will need to revert this gamma correction elsewhere
 	frag_color = pow(final, vec4(2.2));
 //vec4(fresnel)
 }
