@@ -47,14 +47,17 @@ slope_damping = 0.2
 slope_threshold = Vector2(0.9, 0.98)
 low_slope_color = Color(0.366477, 0.373384, 0.0777902, 1)
 high_slope_color = Color(0.1, 0.05835, 0.049, 1)
-ambient_light = Color(0.192, 0.2712, 0.3, 1)
+ambient_light = Color(0.801318, 0.870451, 0.896572, 1)
 fog_color = Color(0.517647, 0.552941, 0.607843, 1)
 fog_start = 0.0
 fog_end = 1000.0
+fog_intensity = null
+wind_dir = Vector3(-0.025, 0.12, 0)
+wind_offset = Vector3(-8.645, -4.875, -4.34)
 metadata/_custom_type_script = "uid://7n58awc2ols0"
 
 [sub_resource type="Compositor" id="Compositor_1i1cu"]
-compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_vvh5c"), null])
+compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_vvh5c")])
 
 [node name="Root" type="Node3D"]
 

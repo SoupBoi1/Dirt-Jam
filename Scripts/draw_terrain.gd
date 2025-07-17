@@ -82,6 +82,9 @@ class_name DrawTerrainMesh extends CompositorEffect
 @export var fog_start : float = 0.0
 ## end distance 
 @export var fog_end : float = 1000.0
+@export var fog_intensity : float = 1000.0
+@export var wind_dir:Vector3 = Vector3(0,0,0)
+@export var wind_offset:Vector3 = Vector3(0,0,0)
 
 
 var transform : Transform3D
@@ -380,8 +383,18 @@ func _render_callback(_effect_callback_type : int, render_data : RenderData):
 	buffer.push_back(1.0)
 	buffer.push_back(fog_start)
 	buffer.push_back(fog_end)
+	buffer.push_back(fog_intensity)
 	buffer.push_back(1.0)
+	buffer.push_back(wind_dir.x)
+	buffer.push_back(wind_dir.y)
+	buffer.push_back(wind_dir.z)
 	buffer.push_back(1.0)
+	buffer.push_back(wind_offset.x)
+	buffer.push_back(wind_offset.y)
+	buffer.push_back(wind_offset.z)
+	buffer.push_back(1.0)
+
+
 
 
 

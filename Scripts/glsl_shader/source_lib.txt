@@ -27,6 +27,11 @@ layout(set = 0, binding = 0, std140) uniform UniformBufferObject {
 	vec4 _fog_color;
 	float _fog_start;
 	float _fog_end;
+	float _fog_intensity;
+	vec3 _wind_dir;
+	vec3 _wind_offset;
+
+
 
 
 };
