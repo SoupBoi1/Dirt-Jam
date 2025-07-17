@@ -140,8 +140,8 @@ vec3 fbm(vec2 pos,float camdis) {
 
 	float dist_high_setting = -2.91965*log(camdis) +22.22815;
 	float dist_low_setting = -2.12591*log(camdis) +16.23171;
-
-	for(int i = 0; i < int(min(_Octaves,dist_low_setting * ceil(min(1,max(0,_fog_end-camdis))) )); ++i) {
+	float com = min(_Octaves,dist_low_setting * ceil(min(1,max(0,_fog_end-camdis))) );
+	for(int i = 0; i < int(_Octaves); ++i) {
 		vec3 n = perlin_noise2D(pos);
 		
 		// add height scaled by current amplitude
